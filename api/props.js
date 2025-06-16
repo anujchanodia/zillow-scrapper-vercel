@@ -1,7 +1,5 @@
 require('dotenv').config();
-
-// In-memory storage
-let cachedProperties = [];
+const dataStore = require('../lib/dataStore');
 
 // Serverless function handler
 module.exports = async (req, res) => {
@@ -36,8 +34,8 @@ module.exports = async (req, res) => {
       state
     } = req.query;
 
-    // Use cached properties (these get populated by /api/scrape)
-    let allProperties = cachedProperties;
+    // Get properties from shared store
+    const allProperties = dataStore.getProperties();
 
     if (allProperties.length === 0) {
       return res.status(200).json({
@@ -122,9 +120,4 @@ module.exports = async (req, res) => {
       error: error.message
     });
   }
-};
-
-// Function to update cached properties (called by scrape.js)
-module.exports.updateProperties = (properties) => {
-  cachedProperties = properties;
 };

@@ -1,8 +1,6 @@
 require('dotenv').config();
 const ZillowScraper = require('../lib/scraper');
-
-// In-memory storage for this session
-let scrapedProperties = [];
+const dataStore = require('../lib/dataStore');
 
 // Serverless function handler
 module.exports = async (req, res) => {
@@ -48,8 +46,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Store in memory for this session
-    scrapedProperties = properties;
+    // Store in shared data store
+    dataStore.setProperties(properties);
     
     const duration = Date.now() - startTime;
     console.log(`[api] Scrape job completed in ${duration}ms`);
@@ -64,7 +62,7 @@ module.exports = async (req, res) => {
         duration: duration,
         timestamp: new Date().toISOString(),
         storage: {
-          type: 'in-memory',
+          type: 'shared-memory',
           totalProperties: properties.length
         }
       },
@@ -91,6 +89,3 @@ module.exports = async (req, res) => {
     });
   }
 };
-
-// Export the in-memory data for other endpoints
-module.exports.getScrapedProperties = () => scrapedProperties;

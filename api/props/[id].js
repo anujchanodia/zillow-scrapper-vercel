@@ -1,5 +1,5 @@
 require('dotenv').config();
-const ZillowScraper = require('../../lib/scraper');
+const dataStore = require('../../lib/dataStore');
 
 // Serverless function handler
 module.exports = async (req, res) => {
@@ -31,12 +31,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Initialize scraper to load data
-    const scraper = new ZillowScraper();
-    const allProperties = await scraper.loadPropertiesFromFile();
-
-    // Find the property
-    const property = allProperties.find(p => p.id === id || p.zillowId === id);
+    // Find property in shared store
+    const property = dataStore.findProperty(id);
 
     if (!property) {
       return res.status(404).json({
@@ -48,35 +44,7 @@ module.exports = async (req, res) => {
     // Return full property details
     res.status(200).json({
       success: true,
-      data: {
-        id: property.id,
-        zillowId: property.zillowId,
-        address: property.address,
-        city: property.city,
-        state: property.state,
-        zipCode: property.zipCode,
-        latitude: property.latitude,
-        longitude: property.longitude,
-        
-        bedrooms: property.bedrooms,
-        bathrooms: property.bathrooms,
-        price: property.price,
-        squareFootage: property.squareFootage,
-        lotSize: property.lotSize,
-        yearBuilt: property.yearBuilt,
-        propertyType: property.propertyType,
-        
-        zillowUrl: property.zillowUrl,
-        zestimate: property.zestimate,
-        rentZestimate: property.rentZestimate,
-        
-        unitCount: property.unitCount,
-        isMultiUnit: property.isMultiUnit,
-        
-        images: property.images || [],
-        scrapedAt: property.scrapedAt,
-        isActive: property.isActive
-      }
+      data: property
     });
 
   } catch (error) {
