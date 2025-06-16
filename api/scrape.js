@@ -1,6 +1,8 @@
 require('dotenv').config();
 const ZillowScraper = require('../lib/scraper');
-const StorageManager = require('../lib/storage');
+
+// In-memory storage for this session
+let scrapedProperties = [];
 
 // Serverless function handler
 module.exports = async (req, res) => {
@@ -26,16 +28,6 @@ module.exports = async (req, res) => {
   console.log('[api] Scrape job started at:', new Date().toISOString());
 
   try {
-    // Initialize storage
-    const storage = new StorageManager();
-    storage.ensureDirectories();
-
-    // Check disk usage
-    const diskUsage = storage.getDiskUsageWarning();
-    if (diskUsage.warning) {
-      console.warn('[api] Disk usage warning:', diskUsage.message);
-    }
-
     // Initialize scraper
     const scraper = new ZillowScraper();
     
@@ -56,11 +48,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Save properties to file
-    const allProperties = await scraper.savePropertiesToFile(properties);
-    
-    // Get storage stats
-    const storageStats = storage.getStorageStats();
+    // Store in memory for this session
+    scrapedProperties = properties;
     
     const duration = Date.now() - startTime;
     console.log(`[api] Scrape job completed in ${duration}ms`);
@@ -71,10 +60,13 @@ module.exports = async (req, res) => {
       message: 'Scraping completed successfully',
       data: {
         newProperties: properties.length,
-        totalProperties: allProperties.length,
+        totalProperties: properties.length,
         duration: duration,
         timestamp: new Date().toISOString(),
-        storage: storageStats
+        storage: {
+          type: 'in-memory',
+          totalProperties: properties.length
+        }
       },
       samples: properties.slice(0, 3).map(p => ({
         id: p.id,
@@ -82,7 +74,8 @@ module.exports = async (req, res) => {
         bedrooms: p.bedrooms,
         bathrooms: p.bathrooms,
         price: p.price,
-        images: p.images.length
+        images: p.images.length,
+        zillowUrl: p.zillowUrl
       }))
     });
 
@@ -98,3 +91,6 @@ module.exports = async (req, res) => {
     });
   }
 };
+
+// Export the in-memory data for other endpoints
+module.exports.getScrapedProperties = () => scrapedProperties;

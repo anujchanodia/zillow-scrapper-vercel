@@ -1,5 +1,7 @@
 require('dotenv').config();
-const ZillowScraper = require('../lib/scraper');
+
+// In-memory storage
+let cachedProperties = [];
 
 // Serverless function handler
 module.exports = async (req, res) => {
@@ -34,9 +36,8 @@ module.exports = async (req, res) => {
       state
     } = req.query;
 
-    // Initialize scraper to load data
-    const scraper = new ZillowScraper();
-    let allProperties = await scraper.loadPropertiesFromFile();
+    // Use cached properties (these get populated by /api/scrape)
+    let allProperties = cachedProperties;
 
     if (allProperties.length === 0) {
       return res.status(200).json({
@@ -88,7 +89,7 @@ module.exports = async (req, res) => {
         propertyType: property.propertyType,
         unitCount: property.unitCount,
         zillowUrl: property.zillowUrl,
-        heroImage: property.images?.find(img => img.isHero)?.localPath || null,
+        heroImage: property.images?.find(img => img.isHero)?.url || null,
         imageCount: property.images?.length || 0,
         scrapedAt: property.scrapedAt
       }));
@@ -121,4 +122,9 @@ module.exports = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// Function to update cached properties (called by scrape.js)
+module.exports.updateProperties = (properties) => {
+  cachedProperties = properties;
 };
