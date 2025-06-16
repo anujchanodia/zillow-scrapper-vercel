@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "echo 'API only - no build needed'",
   "routes": [
     {
       "src": "/uploads/(.*)",
